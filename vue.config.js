@@ -7,7 +7,11 @@ module.exports = {
         proxy: {
             '/xboot': {
                 target: 'http://127.0.0.1:8888',  // 请求本地 需要xboot后台项目
-                ws: true
+                ws: true,
+                changeOrigin:true, //允许跨域
+                pathRewrite:{
+                  '^/': ''
+                }
             },
             '/foo': {
                 target: '<other_url>'
