@@ -3,11 +3,11 @@ const CompressionPlugin = require('compression-webpack-plugin');
 module.exports = {
     devServer: {
         host: '127.0.0.1',
-        port: 9000,
+        port: 9999,
         proxy: {
             '/xboot': {
                 target: 'http://127.0.0.1:8888',  // 请求本地 需要xboot后台项目
-                ws: true
+                ws: true,
             },
             '/foo': {
                 target: '<other_url>'

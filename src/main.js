@@ -10,6 +10,7 @@ import '@/locale'
 import 'iview/dist/styles/iview.css'
 import VueI18n from 'vue-i18n'
 import Icon from 'vue-awesome/components/Icon'
+
 // 按需引入awesome图标
 import 'vue-awesome/icons/brands/qq'
 import 'vue-awesome/icons/brands/weixin'
@@ -19,6 +20,7 @@ import { getRequest, postRequest, putRequest, deleteRequest, uploadFileRequest }
 import { setStore, getStore, removeStore } from '@/libs/storage'
 import util from '@/libs/util'
 import dictUtil from '@/libs/dictUtil'
+import config from '@/api/config'
 import hasPermission from '@/libs/hasPermission'
 import hasRole from '@/libs/hasRole'
 import VueLazyload from 'vue-lazyload'
@@ -28,6 +30,7 @@ import VueApexCharts from 'vue-apexcharts'
 import '@babel/polyfill'
 
 Vue.config.productionTip = false
+
 Vue.use(VueLazyload, {
     error: require('./assets/img-error.png'),
     loading: require('./assets/loading2.gif')
@@ -51,6 +54,10 @@ Vue.prototype.uploadFileRequest = uploadFileRequest;
 Vue.prototype.setStore = setStore;
 Vue.prototype.getStore = getStore;
 Vue.prototype.removeStore = removeStore;
+/**
+ * @description 全局注册应用配置
+ */
+Vue.prototype.$config = config
 
 /* eslint-disable no-new */
 new Vue({

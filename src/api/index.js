@@ -14,6 +14,8 @@ export const getDictData = "/xboot/dictData/getByType/"
 
 
 
+
+
 // 登陆
 export const login = (params) => {
     return postRequest('/login', params)
@@ -369,3 +371,6 @@ export const deleteMessageSend = (ids, params) => {
 export const base64Upload = (params) => {
     return postRequest('/upload/file', params)
 }
+
+
+

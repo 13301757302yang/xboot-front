@@ -100,7 +100,6 @@ export const putRequest = (url, params) => {
             return ret;
         }],
         headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
             'accessToken': accessToken
         }
     });

@@ -625,6 +625,8 @@ export default {
       getUserListData(this.searchForm).then(res => {
         this.loading = false;
         if (res.success == true) {
+            console.log("content:"+res.result.content);
+            console.log("result:"+res.result);
           this.data = res.result.content;
           this.total = res.result.totalElements;
         }
