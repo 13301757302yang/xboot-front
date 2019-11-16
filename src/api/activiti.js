@@ -9,6 +9,9 @@ export const getModelListData = (params) => {
     return getRequest('/activiti/getAll', params)
 }
 
+export const deleteModel = (id,params) => {
+    return postRequest(`/activiti/deleteModel/${id}`, params)
+}
 
 
 

@@ -96,13 +96,13 @@
         <FormItem label="标识key" prop="key">
           <Input v-model="modelForm.key"/>
         </FormItem>
-        <FormItem label="备注" prop="metaInfo">
-          <Input v-model="modelForm.metaInfo"/>
+        <FormItem label="备注" prop="description">
+          <Input v-model="modelForm.description"/>
         </FormItem>
       </Form>
       <div slot="footer">
-        <Button type="text" @click="handleCancel">取消</Button>
-        <Button type="primary" :loading="submitLoading" @click="modelSubmit">提交</Button>
+        <Button type="text" size="large" @click="handleCancel">取消</Button>
+        <Button type="primary" size="large" :loading="submitLoading" @click="modelSubmit">提交</Button>
       </div>
     </Modal>
   </div>
@@ -111,6 +111,7 @@
 <script>
 import {
     addModel,
+    deleteModel,
     getModelListData
 } from "@/api/activiti.js";
 import { formatDate } from "@/api/date.js";
@@ -130,12 +131,12 @@ export default{
                 // 添加或编辑表单对象初始化数据
                 name: "",
                 key: "",
-                metaInfo: ""
+                description: ""
             },
             searchForm: {
                 name: "",
                 key: "",
-                metaInfo: ""
+                description: ""
             },
             // 表单验证规则
             formValidate: {
@@ -175,7 +176,7 @@ export default{
                 },
                 {
                     title: "备注描述",
-                    key: "metaInfo",
+                    key: "description",
                     minWidth: 35,
                     sortable: true
                 },
@@ -274,7 +275,7 @@ export default{
                                     },
                                     on: {
                                         click: () => {
-                                            this.remove(params.row);
+                                            this.delModel(params.row);
                                         }
                                     }
                                 },
@@ -365,6 +366,22 @@ export default{
             this.$refs.modelForm.resetFields();
             delete this.modelForm.id;
             this.modalVisible = true;
+        },
+        delModel(v){
+            this.$Modal.confirm({
+                title: "确认删除",
+                // 记得确认修改此处
+                content: "您确认要删除 " + v.name + " ?",
+                onOk: () => {
+                    // 删除
+                    deleteModel(v.id).then(res => {
+                      if (res.success == true) {
+                        this.$Message.success("操作成功");
+                        this.getModelList();
+                      }
+                    });
+                }
+            })
         },
         edit(v){
             editModel(v.id);
