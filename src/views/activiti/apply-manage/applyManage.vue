@@ -10,11 +10,11 @@
               clearable
               placeholder="输入关键字搜索 "
               class="search-input"
-              v-model="searchTitle"
+              v-model="searchForm.title"
             />
           </FormItem>
           <FormItem prop="key" label="请假类型">
-            <Select v-model="searchLeaveType" style="width:100px">
+            <Select v-model="searchForm.leaveType" style="width:100px">
               <Option v-for="item in typeList" :value="item.key" :key="item.key">{{ item.value }}</Option>
             </Select>
           </FormItem>
@@ -220,8 +220,9 @@
 </template>
 
 <script>
-import { getMineTableData } from '@/api/activiti.js'
+import { getMineTableData,addModel,insertLeave,getLeaveList } from '@/api/activiti.js'
 import { treeDataTranslate, buildTree } from '@/libs/util'
+import { formatDate } from "@/api/date.js"
 
 export default {
   name: 'apply-manage',
@@ -243,7 +244,12 @@ export default {
       infoForm: {},
       update_modal: false,
       updateForm: {},
-      applyForm: {},
+      applyForm: {
+        // 添加或编辑表单对象初始化数据
+        name: "",
+        key: "",
+        description: ""
+      },
       apply_modal: false,
       apply_id: '',
       searchTitle: '',
@@ -257,7 +263,13 @@ export default {
       allot_role_id: '',
       menuList: [],
       allot_modal: false,
-      insertForm: {},
+      insertForm: {
+        // 请假信息model
+        title: "",
+        leaveType: "",
+        daterange: "",
+        reason: ""
+      },
       insert_modal: false,
       delete_id: '',
       delete_modal: false,
@@ -587,7 +599,28 @@ export default {
       if (e.target.value === '') this.insideTableData = this.value
     },
     loadTableData () {
-      this.tableLoading = true
+      // 多条件搜索用户列表
+      this.tableLoading = true;
+      // 避免后台默认值
+      if (!this.searchForm.title) {
+          this.searchForm.title = "";
+      }
+      if (!this.searchForm.leaveType) {
+          this.searchForm.leaveType = "";
+      }
+      getLeaveList(this.searchForm).then(res => {
+          this.tableLoading = false;
+          if (res.success == true) {
+              // var result = res.result;
+              // result.forEach(item=>{
+              //     // 将时间格式化后重新赋值
+              //     let date = new Date(item.createTime);
+              //     item.createTime = formatDate(date,"yyyy-MM-dd hh:mm:ss")
+              // });
+              this.data = result;
+              this.total = res.result.totalElements;
+          }
+      });
       let params = {
         page: this.page,
         limit: this.pageSize
@@ -693,36 +726,61 @@ export default {
         return false
       }
       // 时间处理
-      var startTime = new Date(timeArray[0]).getTime()
-      var endTime = new Date(timeArray[1]).getTime()
-      var days = (endTime - startTime) / (3600 * 24 * 1000)
-      this.$refs['insertForm'].validate(valid => {
+      var startTime = new Date(timeArray[0])
+      var endTime = new Date(timeArray[1])
+      var days = (endTime.getTime() - startTime.getTime()) / (3600 * 24 * 1000)
+
+      console.log("startTime1" + formatDate(startTime,"yyyy-MM-dd hh:mm:ss"));
+      console.log("endTime1" + formatDate(endTime,"yyyy-MM-dd hh:mm:ss"));
+
+      
+
+      console.log("startTime" + startTime);
+      console.log("endTime" + endTime);
+      let params = {
+        title: this.insertForm.title,
+        leaveType: this.insertForm.leaveType,
+        reason: this.insertForm.reason,
+        startTime: formatDate(startTime,"yyyy-MM-dd hh:mm:ss"),
+        endTime: formatDate(endTime,"yyyy-MM-dd hh:mm:ss"),
+        days: days
+      }
+      this.$refs.insertForm.validate(valid => {
         if (valid) {
-          axios
-            .request({
-              url: 'leave',
-              method: 'post',
-              data: {
-                title: this.insertForm.title,
-                leaveType: this.insertForm.leaveType,
-                reason: this.insertForm.reason,
-                startTime: startTime,
-                endTime: endTime,
-                days: days
+          insertLeave(params).then(res => {
+              this.modal_loading = false;
+              if (res.success == true) {
+                  this.$Message.success("操作成功");
+                  this.refresh();
+                  this.insert_modal = false;
               }
-            })
-            .then(res => {
-              if (res.data.success) {
-                this.modal_loading = false
-                this.insert_modal = false
-                this.$Message.success('操作成功')
-                this.refresh()
-              } else {
-                this.modal_loading = false
-                this.insert_modal = false
-                this.$Message.error(res.data.msg)
-              }
-            })
+          });
+
+          // axios
+          //   .request({
+          //     url: 'leave',
+          //     method: 'post',
+          //     data: {
+          //       title: this.insertForm.title,
+          //       leaveType: this.insertForm.leaveType,
+          //       reason: this.insertForm.reason,
+          //       startTime: startTime,
+          //       endTime: endTime,
+          //       days: days
+          //     }
+          //   })
+          //   .then(res => {
+          //     if (res.data.success) {
+          //       this.modal_loading = false
+          //       this.insert_modal = false
+          //       this.$Message.success('操作成功')
+          //       this.refresh()
+          //     } else {
+          //       this.modal_loading = false
+          //       this.insert_modal = false
+          //       this.$Message.error(res.data.msg)
+          //     }
+          //   })
         } else {
           this.$Message.error('Fail!')
           return
@@ -859,30 +917,38 @@ export default {
     },
     // 添加
     apply () {
-      this.modal_loading = true
-      this.$refs['applyForm'].validate(valid => {
+      this.$refs.applyForm.validate(valid => {
         if (valid) {
-          axios
-            .request({
-              url: 'leave/apply',
-              method: 'post',
-              data: {
-                id: this.apply_id,
-                users: this.applyForm.users
+          this.modal_loading = true;
+          addModel(this.applyForm).then(res => {
+              this.submitLoading = false;
+              if (res.success == true) {
+                  this.$Message.success("操作成功");
+                  this.refresh();
+                  this.modalVisible = false;
               }
-            })
-            .then(res => {
-              if (res.data.success) {
-                this.modal_loading = false
-                this.$Message.success('操作成功')
-                this.refresh()
-                this.apply_modal = false
-              } else {
-                this.modal_loading = false
-                this.$Message.error(res.data.msg)
-                this.apply_modal = false
-              }
-            })
+          });
+          // axios
+          //   .request({
+          //     url: 'leave/apply',
+          //     method: 'post',
+          //     data: {
+          //       id: this.apply_id,
+          //       users: this.applyForm.users
+          //     }
+          //   })
+          //   .then(res => {
+          //     if (res.data.success) {
+          //       this.modal_loading = false
+          //       this.$Message.success('操作成功')
+          //       this.refresh()
+          //       this.apply_modal = false
+          //     } else {
+          //       this.modal_loading = false
+          //       this.$Message.error(res.data.msg)
+          //       this.apply_modal = false
+          //     }
+          //   })
             
           this.apply_id = ''
         } else {
@@ -891,7 +957,7 @@ export default {
           return
         }
       })
-    }
+    } 
   }
 }
 </script>

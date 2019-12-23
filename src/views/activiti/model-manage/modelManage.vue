@@ -318,15 +318,6 @@ export default{
                             }
                         });
                     } else {
-                        // 编辑
-                        // this.postRequest("请求地址", this.form).then(res => {
-                        //   this.submitLoading = false;
-                        //   if (res.success == true) {
-                        //     this.$Message.success("操作成功");
-                        //     this.getDataList();
-                        //     this.modalVisible = false;
-                        //   }
-                        // });
                         // 模拟请求成功
                         this.submitLoading = false;
                         this.$Message.success("操作成功");
