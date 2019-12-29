@@ -14,13 +14,22 @@ export const deleteModel = (id,params) => {
 }
 
 // 新增申请
+export const insertLeave = (params) => {
+    return postRequest('/leave/insert', params)
+}
+
+// 提交申请
 export const applyLeave = (params) => {
-    return postRequest('/leave/apply', params)
+    return postRequest('/leave/applyLeave', params)
 }
 
 // 申请列表
 export const getLeaveList = (params) => {
     return getRequest('/leave/getAll', params)
+}
+// 删除申请
+export const deleteLeave = (id,params) => {
+    return postRequest(`/leave/deleteLeave/${id}`, params)
 }
 
 

@@ -15,12 +15,12 @@
           </FormItem>
           <FormItem prop="key" label="请假类型">
             <Select v-model="searchForm.leaveType" style="width:100px">
-              <Option v-for="item in typeList" :value="item.key" :key="item.key">{{ item.value }}</Option>
+              <Option v-for="item in typeList" :value="item.value" :key="item.key">{{ item.value }}</Option>
             </Select>
           </FormItem>
           <FormItem label="起止时间" prop="daterange">
             <DatePicker
-              type="datetimerange"
+              type="searchForm.datetimerange"
               placeholder="Select date and time"
               v-model="searchDaterange"
               style="width: 280px"
@@ -73,7 +73,7 @@
           </FormItem>
           <FormItem label="请假类型" prop="leaveType">
             <Select v-model="insertForm.leaveType" style="width:405px">
-              <Option v-for="item in typeList" :value="item.key" :key="item.key">{{ item.value }}</Option>
+              <Option v-for="item in typeList" :value="item.value" :key="item.key">{{ item.value }}</Option>
             </Select>
           </FormItem>
           <FormItem label="起止时间" prop="daterange">
@@ -138,7 +138,7 @@
           </FormItem>
           <FormItem label="请假类型" prop="leaveType">
             <Select v-model="infoForm.leaveType" style="width:405px" disabled>
-              <Option v-for="item in typeList" :value="item.key" :key="item.key">{{ item.value }}</Option>
+              <Option v-for="item in typeList" :value="item.value" :key="item.key">{{ item.value }}</Option>
             </Select>
           </FormItem>
           <FormItem label="起止时间" prop="daterange">
@@ -220,7 +220,7 @@
 </template>
 
 <script>
-import { getMineTableData,addModel,insertLeave,getLeaveList } from '@/api/activiti.js'
+import { getMineTableData,addModel,insertLeave,getLeaveList,deleteLeave,applyLeave } from '@/api/activiti.js'
 import { treeDataTranslate, buildTree } from '@/libs/util'
 import { formatDate } from "@/api/date.js"
 
@@ -246,9 +246,8 @@ export default {
       updateForm: {},
       applyForm: {
         // 添加或编辑表单对象初始化数据
-        name: "",
-        key: "",
-        description: ""
+        users: "",
+        id: "",
       },
       apply_modal: false,
       apply_id: '',
@@ -566,34 +565,7 @@ export default {
     },
     // 搜索
     handleSearch () {
-      this.tableLoading = true
-      let params = {
-        page: this.page,
-        limit: this.pageSize,
-        title: this.searchTitle,
-        leaveType: this.searchLeaveType
-      }
-
-      // 设置时间
-      var timeArray = this.searchDaterange
-      if (!(timeArray[0] == '' || timeArray[1] == null)) {
-        // 时间处理
-        var startTime = new Date(timeArray[0]).getTime()
-        var endTime = new Date(timeArray[1]).getTime()
-        // 动态设置参数
-        this.$set(params, "startTime", startTime)
-        this.$set(params, "endTime", endTime)
-      }
-
-      getMineTableData(params).then(res => {
-        if (res.data.success) {
-          this.tableLoading = false
-          this.tableData = res.data.data.list
-          this.total = res.data.data.totalCount
-        } else {
-          this.$Message.error(res.data.msg)
-        }
-      })
+      this.loadTableData();
     },
     handleClear (e) {
       if (e.target.value === '') this.insideTableData = this.value
@@ -611,35 +583,26 @@ export default {
       getLeaveList(this.searchForm).then(res => {
           this.tableLoading = false;
           if (res.success == true) {
-              // var result = res.result;
-              // result.forEach(item=>{
-              //     // 将时间格式化后重新赋值
-              //     let date = new Date(item.createTime);
-              //     item.createTime = formatDate(date,"yyyy-MM-dd hh:mm:ss")
-              // });
-              this.data = result;
-              this.total = res.result.totalElements;
+              var result = res.result;
+              result.forEach(item=>{
+                  // 将时间格式化后重新赋值 1、 提交时间 2、 创建时间  3、开始时间、 4、结束时间
+                  item.submitTime = formatDate(new Date(item.submitTime),"yyyy-MM-dd hh:mm:ss");
+                  item.createTime = formatDate(new Date(item.createTime),"yyyy-MM-dd hh:mm:ss");
+                  item.startTime = formatDate(new Date(item.startTime),"yyyy-MM-dd hh:mm:ss");
+                  item.endTime = formatDate(new Date(item.endTime),"yyyy-MM-dd hh:mm:ss");      
+
+              });
+              this.tableData = result;
+          } else {
+            this.tableData = [];
           }
       });
-      let params = {
-        page: this.page,
-        limit: this.pageSize
-      }
-
-      getMineTableData(params).then(res => {
-        if (res.data.success) {
-          this.tableLoading = false
-          this.tableData = res.data.data.list
-          this.total = res.data.data.totalCount
-        } else {
-          this.$Message.error(res.data.msg)
-        }
-      })
     },
     cancel () {
       this.update_modal = false
       this.insert_modal = false
       this.allot_modal = false
+      this.apply_modal = false
     },
     // 分页
     pageChange (index) {
@@ -658,22 +621,15 @@ export default {
         return
       }
       this.modal_loading = true
-      axios
-        .request({
-          url: 'leave/' + this.delete_id,
-          method: 'delete'
-        })
-        .then(res => {
-          if (res.data.success) {
-            this.$Message.success('操作成功')
-            this.refresh()
-          } else {
-            this.$Message.error(res.data.msg)
-          }
-        })
-
-      this.modal_loading = false
-      this.delete_modal = false
+      // 删除
+      deleteLeave(this.delete_id).then(res => {
+        if (res.success == true) {
+          this.$Message.success("操作成功");
+          this.modal_loading = false;
+          this.delete_modal = false;
+          this.refresh();
+        }
+      });
     },
     refresh () {
       this.loadTableData()
@@ -729,14 +685,6 @@ export default {
       var startTime = new Date(timeArray[0])
       var endTime = new Date(timeArray[1])
       var days = (endTime.getTime() - startTime.getTime()) / (3600 * 24 * 1000)
-
-      console.log("startTime1" + formatDate(startTime,"yyyy-MM-dd hh:mm:ss"));
-      console.log("endTime1" + formatDate(endTime,"yyyy-MM-dd hh:mm:ss"));
-
-      
-
-      console.log("startTime" + startTime);
-      console.log("endTime" + endTime);
       let params = {
         title: this.insertForm.title,
         leaveType: this.insertForm.leaveType,
@@ -751,36 +699,10 @@ export default {
               this.modal_loading = false;
               if (res.success == true) {
                   this.$Message.success("操作成功");
-                  this.refresh();
                   this.insert_modal = false;
+                  this.refresh();
               }
           });
-
-          // axios
-          //   .request({
-          //     url: 'leave',
-          //     method: 'post',
-          //     data: {
-          //       title: this.insertForm.title,
-          //       leaveType: this.insertForm.leaveType,
-          //       reason: this.insertForm.reason,
-          //       startTime: startTime,
-          //       endTime: endTime,
-          //       days: days
-          //     }
-          //   })
-          //   .then(res => {
-          //     if (res.data.success) {
-          //       this.modal_loading = false
-          //       this.insert_modal = false
-          //       this.$Message.success('操作成功')
-          //       this.refresh()
-          //     } else {
-          //       this.modal_loading = false
-          //       this.insert_modal = false
-          //       this.$Message.error(res.data.msg)
-          //     }
-          //   })
         } else {
           this.$Message.error('Fail!')
           return
@@ -915,45 +837,27 @@ export default {
         return v.length > 20 ? v.slice(0, 20) + '...' : v
       }
     },
-    // 添加
+    // 新增
     apply () {
       this.$refs.applyForm.validate(valid => {
         if (valid) {
           this.modal_loading = true;
-          addModel(this.applyForm).then(res => {
+          let params = {
+            id: this.apply_id,
+            users: this.applyForm.users
+          }
+          applyLeave(params).then(res => {
               this.submitLoading = false;
               if (res.success == true) {
                   this.$Message.success("操作成功");
+                  this.apply_modal = false;
                   this.refresh();
-                  this.modalVisible = false;
               }
           });
-          // axios
-          //   .request({
-          //     url: 'leave/apply',
-          //     method: 'post',
-          //     data: {
-          //       id: this.apply_id,
-          //       users: this.applyForm.users
-          //     }
-          //   })
-          //   .then(res => {
-          //     if (res.data.success) {
-          //       this.modal_loading = false
-          //       this.$Message.success('操作成功')
-          //       this.refresh()
-          //       this.apply_modal = false
-          //     } else {
-          //       this.modal_loading = false
-          //       this.$Message.error(res.data.msg)
-          //       this.apply_modal = false
-          //     }
-          //   })
-            
           this.apply_id = ''
         } else {
           this.modal_loading = false
-          this.$Message.error('Fail!')
+          this.$Message.error('审批人不能为空!')
           return
         }
       })
