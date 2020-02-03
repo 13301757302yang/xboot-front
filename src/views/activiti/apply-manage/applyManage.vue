@@ -852,9 +852,9 @@ export default {
                   this.$Message.success("操作成功");
                   this.apply_modal = false;
                   this.refresh();
-              }
+              } 
           });
-          this.apply_id = ''
+        
         } else {
           this.modal_loading = false
           this.$Message.error('审批人不能为空!')

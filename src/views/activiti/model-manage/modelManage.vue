@@ -112,7 +112,8 @@
 import {
     addModel,
     deleteModel,
-    getModelListData
+    getModelListData,
+    deployModel
 } from "@/api/activiti.js";
 import { formatDate } from "@/api/date.js";
 export default{
@@ -240,7 +241,7 @@ export default{
                                     },
                                     on: {
                                         click: () => {
-                                            this.remove(params.row);
+                                            this.depModel(params.row);
                                         }
                                     }
                                 },
@@ -366,6 +367,22 @@ export default{
                 onOk: () => {
                     // 删除
                     deleteModel(v.id).then(res => {
+                      if (res.success == true) {
+                        this.$Message.success("操作成功");
+                        this.getModelList();
+                      }
+                    });
+                }
+            })
+        },
+        depModel(v){
+            this.$Modal.confirm({
+                title: "确认发布",
+                // 记得确认修改此处
+                content: "您确认要部署发布 " + v.name + " ?",
+                onOk: () => {
+                    // 删除
+                    deployModel(v.id).then(res => {
                       if (res.success == true) {
                         this.$Message.success("操作成功");
                         this.getModelList();

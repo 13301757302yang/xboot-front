@@ -13,6 +13,12 @@ export const deleteModel = (id,params) => {
     return postRequest(`/activiti/deleteModel/${id}`, params)
 }
 
+// 部署发布流程
+export const deployModel = (id,params) => {
+    return postRequest(`/activiti/deployModel/${id}`, params)
+}
+
+
 // 新增申请
 export const insertLeave = (params) => {
     return postRequest('/leave/insert', params)
